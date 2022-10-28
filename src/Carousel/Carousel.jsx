@@ -16,6 +16,36 @@ import { useState } from "react";
 // infiniteLoop?: boolean, defaults to true
 // onPageChange?(index: number): void;
 
+const CarouselItem = ({ item, height = "250px", width = "500px" }) => {
+  return (
+    <div
+      style={{
+        width: width,
+        height: height,
+      }}
+    >
+      {item && item.type === "video" && (
+        <iframe
+          style={{
+            width: "inherit",
+            height: "inherit",
+          }}
+          src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1&mute=1"
+        ></iframe>
+      )}
+      {item && item.type === "image" && (
+        <img
+          style={{
+            width: "inherit",
+            height: "inherit",
+          }}
+          src={item.source}
+        />
+      )}
+    </div>
+  );
+};
+
 const Carousel = ({
   initialIndex = 0,
   transitionDuration = 400,
@@ -28,11 +58,19 @@ const Carousel = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   const handleOnChangeIndex = (increment) => {
-    if (currentIndex + increment >= items.length) {
-      setCurrentIndex(0);
-      return;
+    setCurrentIndex(findNextIndex(currentIndex + increment));
+  };
+
+  const findNextIndex = (index) => {
+    if (typeof items[index] !== "undefined") {
+      return index;
+    } else {
+      if (index >= items.length) {
+        return 0;
+      } else if (index <= items.length) {
+        return items.length - 1;
+      }
     }
-    setCurrentIndex((prev) => prev + increment);
   };
 
   if (items.length === 0) {
@@ -47,31 +85,22 @@ const Carousel = ({
           alignItems: "center ",
           justifyContent: "center",
           width: "100%",
+          height: "100%",
         }}
       >
         <button onClick={() => handleOnChangeIndex(-1)}>Previous</button>
 
-        <div
-          style={{
-            maxWidth: "500px",
-          }}
-        >
-          {items[currentIndex] && items[currentIndex].type === "video" && (
-            <iframe
-              width={items[currentIndex]}
-              height={items[currentIndex]}
-              src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1&mute=1"
-            ></iframe>
-          )}
-          {items[currentIndex] && items[currentIndex].type === "image" && (
-            <img
-              style={{
-                maxWidth: "500px",
-              }}
-              src={items[currentIndex].source}
-            />
-          )}
-        </div>
+        <CarouselItem
+          item={items[findNextIndex(currentIndex - 1)]}
+          height="100px"
+          width="100px"
+        />
+        <CarouselItem item={items[findNextIndex(currentIndex)]} />
+        <CarouselItem
+          item={items[findNextIndex(currentIndex + 1)]}
+          height="100px"
+          width="100px"
+        />
 
         <button onClick={() => handleOnChangeIndex(1)}>Next</button>
       </div>
