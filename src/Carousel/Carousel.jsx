@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // The assignment purpose is to implement a simple Carousel in React with following features:
 
@@ -73,10 +73,16 @@ const Carousel = ({
     }
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => findNextIndex(prev + 1));
+    }, autoplayInterval);
+    return () => clearInterval(interval);
+  }, []);
+
   if (items.length === 0) {
     return null;
   }
-
   return (
     <>
       <div
