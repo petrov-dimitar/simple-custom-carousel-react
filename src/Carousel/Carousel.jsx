@@ -16,14 +16,17 @@ import { useEffect, useRef, useState } from "react";
 // infiniteLoop?: boolean, defaults to true
 // onPageChange?(index: number): void;
 
-const CarouselItem = ({ item, height = "250px", width = "500px" }) => {
+const CarouselItem = ({
+  item,
+  height = "250px",
+  width = "500px",
+  transitionDuration = 400,
+}) => {
   const ref = useRef(null);
-
-  console.log(ref);
 
   // Animations
   useEffect(() => {
-    const duration = 400;
+    const duration = transitionDuration;
     const node = ref.current;
 
     let startTime = performance.now();
@@ -57,7 +60,7 @@ const CarouselItem = ({ item, height = "250px", width = "500px" }) => {
 
     start();
     return () => stop();
-  }, [item]);
+  }, [item, transitionDuration]);
 
   return (
     <div
@@ -134,6 +137,14 @@ const Carousel = ({
     }
   }, []);
 
+  // Do something on every page change
+  useEffect(() => {
+    if (onPageChange) {
+      // Allow access to current item
+      onPageChange(items[currentIndex]);
+    }
+  }, [currentIndex]);
+
   if (items.length === 0) {
     return null;
   }
@@ -156,9 +167,13 @@ const Carousel = ({
             item={items[findNextIndex(currentIndex - 1)]}
             height="100px"
             width="100px"
+            transitionDuration={transitionDuration}
           />
         )}
-        <CarouselItem item={items[findNextIndex(currentIndex)]} />
+        <CarouselItem
+          item={items[findNextIndex(currentIndex)]}
+          transitionDuration={transitionDuration}
+        />
 
         {((!infiniteLoop && !(currentIndex + 1 >= items.length)) ||
           infiniteLoop) && (

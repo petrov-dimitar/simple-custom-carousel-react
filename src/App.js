@@ -45,7 +45,12 @@ function App() {
         height: "100vh",
       }}
     >
-      <Carousel items={carouselItems} />
+      <Carousel
+        items={carouselItems}
+        onPageChange={(currentIndex) =>
+          console.log("page changed", currentIndex)
+        }
+      />
     </div>
   );
 }
