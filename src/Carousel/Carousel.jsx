@@ -1,9 +1,9 @@
 /** @format */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import CarouselItem from "./CarouselItem";
 
 // The assignment purpose is to implement a simple Carousel in React with following features:
-
 // Support Autoplay
 // Infinite Loop of Items
 // Support Image and video as Item
@@ -16,83 +16,9 @@ import { useEffect, useRef, useState } from "react";
 // infiniteLoop?: boolean, defaults to true
 // onPageChange?(index: number): void;
 
-const CarouselItem = ({
-  item,
-  height = "250px",
-  width = "500px",
-  transitionDuration = 400,
-}) => {
-  const ref = useRef(null);
-
-  // Animations
-  useEffect(() => {
-    const duration = transitionDuration;
-    const node = ref.current;
-
-    let startTime = performance.now();
-    let frameId = null;
-
-    function onFrame(now) {
-      const timePassed = now - startTime;
-      const progress = Math.min(timePassed / duration, 1);
-      onProgress(progress);
-      if (progress < 1) {
-        // We still have more frames to paint
-        frameId = requestAnimationFrame(onFrame);
-      }
-    }
-
-    function onProgress(progress) {
-      node.style.opacity = progress;
-    }
-
-    function start() {
-      onProgress(0);
-      startTime = performance.now();
-      frameId = requestAnimationFrame(onFrame);
-    }
-
-    function stop() {
-      cancelAnimationFrame(frameId);
-      startTime = null;
-      frameId = null;
-    }
-
-    start();
-    return () => stop();
-  }, [item, transitionDuration]);
-
-  return (
-    <div
-      style={{
-        width: width,
-        height: height,
-      }}
-    >
-      {item && item.type === "video" && (
-        <iframe
-          ref={ref}
-          style={{
-            width: "inherit",
-            height: "inherit",
-          }}
-          preload="none"
-          src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1&mute=1"
-        ></iframe>
-      )}
-      {item && item.type === "image" && (
-        <img
-          ref={ref}
-          style={{
-            width: "inherit",
-            height: "inherit",
-          }}
-          src={item.source}
-        />
-      )}
-    </div>
-  );
-};
+// The carousel shows 3 items in the UI, with the current one being bigger on focus.
+// The carousel also has Previous and Next buttons to navigate
+// By default the carousel auto-plays and loops infinitely, but that can be overridden.
 
 const Carousel = ({
   initialIndex = 0,
@@ -106,45 +32,59 @@ const Carousel = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   const handleOnChangeIndex = (increment) => {
-    setCurrentIndex(findNextIndex(currentIndex + increment));
+    setCurrentIndex(findFollowingIndex(currentIndex + increment));
   };
 
-  const findNextIndex = (index) => {
-    if (typeof items[index] !== "undefined") {
-      return index;
-    } else {
-      if (index >= items.length) {
-        if (!infiniteLoop) {
-          return items.length - 1;
-        }
-        return 0;
-      } else if (index <= 0) {
-        if (!infiniteLoop) {
+  // Provide index based items length and provided index.
+  const findFollowingIndex = useCallback(
+    (index) => {
+      // If wanted index exist in items, return it.
+      if (typeof items[index] !== "undefined") {
+        return index;
+      } else {
+        // Otherwise index does not exist in items.
+        // If wanted index is bigger than items length.
+        if (index >= items.length) {
+          // if infinite loop is not, return last item index
+          if (!infiniteLoop) {
+            return items.length - 1;
+          }
+          // Otherwise return first index of items to restart the loop.
           return 0;
         }
-        return items.length - 1;
+        // If wanted index is smaller than 0.
+        else if (index <= 0) {
+          if (!infiniteLoop) {
+            return 0;
+          }
+          // Return last elements to restart the loop.
+          return items.length - 1;
+        }
       }
-    }
-  };
+    },
+    [infiniteLoop, items]
+  );
 
+  // Autoplay
   useEffect(() => {
-    // If autoplay enabled change page on interval
+    // If autoplay enabled change page on interval.
     if (autoplay) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => findNextIndex(prev + 1));
+        setCurrentIndex((prev) => findFollowingIndex(prev + 1));
       }, autoplayInterval);
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [autoplay, autoplayInterval, findFollowingIndex]);
 
-  // Do something on every page change
+  // Do something on every page change.
   useEffect(() => {
     if (onPageChange) {
       // Allow access to current item
       onPageChange(items[currentIndex]);
     }
-  }, [currentIndex]);
+  }, [currentIndex, items, onPageChange]);
 
+  // If no items are provided return null.
   if (items.length === 0) {
     return null;
   }
@@ -160,31 +100,47 @@ const Carousel = ({
           height: "100%",
         }}
       >
-        <button onClick={() => handleOnChangeIndex(-1)}>Previous</button>
+        <button
+          style={{
+            marginRight: "16px",
+          }}
+          onClick={() => handleOnChangeIndex(-1)}
+        >
+          {`<  Previous`}
+        </button>
 
         {((!infiniteLoop && !(currentIndex - 1 < 0)) || infiniteLoop) && (
           <CarouselItem
-            item={items[findNextIndex(currentIndex - 1)]}
+            item={items[findFollowingIndex(currentIndex - 1)]}
             height="100px"
             width="100px"
             transitionDuration={transitionDuration}
           />
         )}
+
+        {/* Current item */}
         <CarouselItem
-          item={items[findNextIndex(currentIndex)]}
+          item={items[findFollowingIndex(currentIndex)]}
           transitionDuration={transitionDuration}
         />
 
         {((!infiniteLoop && !(currentIndex + 1 >= items.length)) ||
           infiniteLoop) && (
           <CarouselItem
-            item={items[findNextIndex(currentIndex + 1)]}
+            item={items[findFollowingIndex(currentIndex + 1)]}
             height="100px"
             width="100px"
           />
         )}
 
-        <button onClick={() => handleOnChangeIndex(1)}>Next</button>
+        <button
+          style={{
+            marginLeft: "16px",
+          }}
+          onClick={() => handleOnChangeIndex(1)}
+        >
+          {`Next  >`}
+        </button>
       </div>
     </>
   );
